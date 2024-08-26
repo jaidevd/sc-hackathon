@@ -1,0 +1,16 @@
+url:
+  home:
+    pattern: /$YAMLURL/
+    handler: FileHandler
+    kwargs:
+      path: $YAMLPATH/index.html
+      template: true
+  logic:
+    pattern: /$YAMLURL/extract
+    handler: FunctionHandler
+    kwargs:
+      function: main.extract
+      xsrf_cookies: false
+      headers:
+        Content-Type: application/json
+
