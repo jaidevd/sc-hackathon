@@ -102,6 +102,22 @@ def polygon2bbox(kvp):
     return {"x": xmin, "y": ymin, "width": xmax - xmin, "height": ymax - ymin}
 
 
+def normalize_bboxes(df, pages):
+    bbox = pd.DataFrame.from_records(df['bbox'].tolist(), index=df.index)
+    bbox['page'] = df['page']
+    page_sizes = pd.DataFrame(
+        [(p.page_number, p.width, p.height) for p in pages],
+        columns=['page', 'width', 'height']
+    ).set_index('page', verify_integrity=True)
+    bbox = bbox.join(page_sizes, on='page', rsuffix='_')
+    bbox['x'] = bbox['x'] / bbox['width_']
+    bbox['y'] = bbox['y'] / bbox['height_']
+    bbox['width'] = bbox['width'] / bbox['width_']
+    bbox['height'] = bbox['height'] / bbox['height_']
+    df[['x', 'y', 'width', 'height']] = bbox[['x', 'y', 'width', 'height']]
+    return df.drop(['bbox'], axis=1)
+
+
 def get_kvps(result, threshold=0.85, n_pages=20):
     kvps = [kvp for kvp in result.key_value_pairs if kvp.confidence >= threshold and kvp.value]
     kvps = pd.DataFrame.from_records([{
@@ -123,7 +139,8 @@ def get_kvps(result, threshold=0.85, n_pages=20):
     kvps = kvps[~kvps['key'].str.contains(r"^of$", case=False)]
     if n_pages:
         kvps = kvps[kvps['page'] <= n_pages]
-    return kvps.sort_values(["page", "confidence"], ascending=[True, False])
+    kvps = kvps.sort_values(["page", "confidence"], ascending=[True, False])
+    return normalize_bboxes(kvps, result.pages)
 
 
 @coroutine

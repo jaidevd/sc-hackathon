@@ -60,7 +60,7 @@
       <thead><tr><th>Item</th><th>Value</th></tr></thead>
       <tbody>
       ${kvps.map((kvp) => html`
-        <tr class="searchrow" data-page="${kvp.page}" data-x="${kvp.bbox.x}" data-y="${kvp.bbox.y}" data-width="${kvp.bbox.width}" data-height="${kvp.bbox.height}">
+        <tr class="searchrow" data-page="${kvp.page}" data-x="${kvp.x}" data-y="${kvp.y}" data-width="${kvp.width}" data-height="${kvp.height}">
           <td class="keyCol"><strong>${kvp.key}</strong></td>
           <td class="valueCol">${kvp.value}</td>
         </tr>
@@ -69,6 +69,7 @@
     </table>`;
 
   let form = document.querySelector('form');
+  let pdfDoc, pdfViewer;
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     let formData = new FormData(form);
@@ -78,14 +79,17 @@
     })
     .then(response => response.json())
     .then(async (data) => {
+      pdfDoc = await loadDocument(data.url)
+      pdfViewer = await renderPage(pdfDoc, 1, pdfViewer)
       render(renderTable(data.kvps), document.querySelector('.kvp-result'));
-      await renderPDF(data.url)
-      let canvas = document.querySelector('canvas')
-      // Add the SVG box
-      let draw = SVG().addTo(".canvasWrapper").size("100%", "100%")
-      draw.node.style.top = `${canvas.offsetTop}`;
-      draw.node.style.left = `${canvas.offsetLeft}`;
-      let rect = draw.rect(100, 100).attr({ fill: '#f06' }).move(0, 0)
+      // Add click listener
+      document.querySelectorAll('tr.searchrow').forEach(tr => {
+        tr.addEventListener('click', async function(event) {
+          await renderPage(pdfDoc, parseInt(tr.dataset.page), pdfViewer)
+          let rect = drawAnnotationBox(tr.dataset)
+          rect.scrollIntoView()
+        })
+      })
     })
     .catch(error => {
       console.error(error);
