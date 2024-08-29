@@ -1,5 +1,5 @@
 const PAGE_TO_VIEW = 1;
-const SCALE = 1.0;
+const SCALE = 1;
 
 const ENABLE_XFA = true;
 
@@ -16,13 +16,19 @@ async function loadDocument(url) {
 async function renderPage(doc, page, view) {
   let eventBus = new pdfjsViewer.EventBus();
   let pdfPage = await doc.getPage(page);
-  let container = document.getElementById("viewContainer");
+  let container = document.querySelector(".pdfContainer");
+  if (!(container)) {
+    container = document.createElement("div");
+    container.classList.add("pdfContainer")
+    document.querySelector('.pdfRow').appendChild(container);
+  }
   if (!(view)) {
     view = new pdfjsViewer.PDFPageView({
       container,
       id: page,
       scale: SCALE,
       defaultViewport: pdfPage.getViewport({ scale: SCALE }),
+      textLayerMode: 0,
       eventBus,
     });
   }
